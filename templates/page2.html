@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width = device-width, initial-scale=1.0">
+    <title>Expenditure Trends</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        .navigation-buttons {
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .navigation-buttons button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .navigation-buttons button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+
+</head>
+<body>
+    <h1>Expenditure Trends</h1>
+
+
+    <div class="container">
+        <div class="navigation-buttons">
+            <button onclick="window.location.href='/page1'">Back to Summary</button>
+        </div>
+    </div>
+
+    <div>
+        <label for="year-select">Year:</label>
+        <select id="year-select"></select>
+    </div>
+
+    <div>
+        <label for="category-select">Category:</label>
+        <select id="category-select">
+            <option value="All">All</option>
+        </select>
+
+        <label for="bank-select">Bank:</label>
+        <select id="bank-select">
+            <option value="All">All</option>
+        </select>
+
+        <input type="checkbox" id="mean-toggle" />
+        <label for="mean-toggle">Show Mean Line</label>
+    </div>
+
+    <div id="chart"></div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const yearSelect = document.getElementById("year-select");
+            const categorySelect = document.getElementById("category-select");
+            const bankSelect = document.getElementById("bank-select");
+            const meanToggle = document.getElementById("mean-toggle");
+            const chartDiv = document.getElementById("chart");
+
+            const currentYear = new Date().getFullYear();
+
+            let rawData = [];
+
+            // Populate year dropdown
+            for (let year = currentYear - 5; year <= currentYear + 1; year++) {
+                const option = document.createElement("option");
+                option.value = year;
+                option.textContent = year;
+                if (year === currentYear) {
+                    option.selected = true;
+                }
+                yearSelect.appendChild(option);
+            }
+
+        
+
+            // Fetch initial data for the current year
+            fetchDataAndUpdateChart(currentYear);
+
+            // Update chart when year changes
+            yearSelect.addEventListener("change", () => {
+                const selectedYear = yearSelect.value;
+                fetchDataAndUpdateChart(selectedYear);
+            });
+
+            // Fetch data and update the chart
+            function fetchDataAndUpdateChart(year) {
+                fetch(`/api/expenditure-trends?year=${year}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        rawData = data;
+                        populateDropdowns(data);
+                        drawChart(data);
+                    })
+                    .catch(error => console.error("Error fetching data:", error));
+            }
+
+
+
+            // Populate category and bank dropdowns
+            function populateDropdowns(data) {
+                const categories = new Set(["All"]);
+                const banks = new Set(["All"]);
+
+                data.forEach(row => {
+                    categories.add(row.classification);
+                    banks.add(row.bank);
+                });
+
+                categories.forEach(category => {
+                    const option = document.createElement("option");
+                    option.value = category;
+                    option.textContent = category;
+                    categorySelect.appendChild(option);
+                });
+
+                banks.forEach(bank => {
+                    const option = document.createElement("option");
+                    option.value = bank;
+                    option.textContent = bank;
+                    bankSelect.appendChild(option);
+                });
+            }
+
+            // Draw the chart
+            function drawChart(data) {
+                const filteredData = filterData(data);
+
+                // Extract unique months and corresponding amounts
+                const months = [...new Set(filteredData.map(row => row.month))].sort((a, b) => a - b);
+                const amounts = months.map(month =>
+                    filteredData
+                        .filter(row => row.month === month)
+                        .reduce((sum, row) => sum + row.amount, 0)
+                );
+
+                const meanValue = amounts.reduce((a, b) => a + b, 0) / amounts.length;
+
+                // Create traces for the chart
+                const traces = [
+                    {
+                        x: months.map(month => new Date(2024, month - 1).toLocaleString('default', { month: 'short' })), // Format months
+                        y: amounts,
+                        type: "scatter", // Change to 'scatter' for a line chart
+                        name: "Expenditure",
+                    },
+                ];
+
+                if (meanToggle.checked) {
+                    traces.push({
+                        x: months.map(month => new Date(2024, month - 1).toLocaleString('default', { month: 'short' })),
+                        y: Array(months.length).fill(meanValue),
+                        type: "scatter",
+                        mode: "lines",
+                        name: "Mean",
+                        line: { dash: "dot", color: "red" },
+                    });
+                }
+
+                Plotly.newPlot(chartDiv, traces, { title: "Expenditure Trends" });
+            }
+
+            // Filter data by selected category and bank
+            function filterData(data) {
+                const selectedCategory = categorySelect.value;
+                const selectedBank = bankSelect.value;
+
+                return data.filter(row => {
+                    return (
+                        (selectedCategory === "All" || row.classification === selectedCategory) &&
+                        (selectedBank === "All" || row.bank === selectedBank)
+                    );
+                });
+            }
+
+            // Add event listeners for filters and mean toggle
+            categorySelect.addEventListener("change", () => drawChart(rawData));
+            bankSelect.addEventListener("change", () => drawChart(rawData));
+            meanToggle.addEventListener("change", () => drawChart(rawData));
+        });
+    </script>
+</body>
+</html>

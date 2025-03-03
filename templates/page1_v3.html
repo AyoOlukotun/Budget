@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expenditure Summary</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f4f4f4;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: auto;
+        }
+
+        .clickable-cell {
+            cursor: pointer;
+            text-decoration: none;
+        }
+        
+        .navigation-buttons{
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .navigation-buttons button {
+            background-color:  #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .navigation-buttons button:hover{
+            background-color: #0056b3;
+        }
+
+        #popup-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
+        #transaction-popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            background: white;
+            border: 1px solid #ccc;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            max-width: 90%; /* Limit the width of the pop-up */
+            max-height: 80%; /* Limit the height of the pop-up */
+            overflow-y: auto; /* Enable vertical scrolling */
+            overflow-x: hidden; /* Prevent horizontal scrolling */
+        }
+
+        #transaction-popup h3 {
+            margin-top: 0;
+        }
+
+        #category-update-popup {
+
+            display: none; 
+            position: fixed; 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%); 
+            z-index: 2000; 
+            background: white; 
+            border: 1px solid #ccc; 
+            padding: 20px; 
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); 
+            max-height: 80%; 
+            overflow-y: auto;
+
+        }
+
+
+
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Expenditure Summary</h1>
+
+
+
+        <div class="navigation-buttons">
+            <button onclick="window.location.href='/page2'">Go to Interactive Charts</button>
+        </div>
+
+        <div style="text-align: center; margin-bottom: 20px;">
+            <label for="year-select">Select Year: </label>
+            <select id="year-select">
+                <!-- Options will be populated dynamically -->
+            </select>
+        </div>
+
+        <h2>Re-authentication</h2>
+            <div>
+                <label for="bank-select">Select Bank:</label>
+                <select id="bank-select">
+                    <option value="" disabled selected>Select a bank</option>
+                    <option value="Amex">Amex</option>
+                    <option value="Barclays">Barclays</option>
+                    <option value="Revolut">Revolut</option>
+                    <!-- Add more options dynamically if needed -->
+                </select>
+                <button id="reauthenticate-button">Start Re-authentication</button>
+            </div>
+            <div id="reauthentication-link" style="margin-top: 20px;"></div>
+
+
+
+        <!-- Grouped Expenditure Table -->
+        <h2>Grouped Expenditure</h2>
+        <table id="grouped-expenditure-table">
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>January</th>
+                    <th>February</th>
+                    <th>March</th>
+                    <th>April</th>
+                    <th>May</th>
+                    <th>June</th>
+                    <th>July</th>
+                    <th>August</th>
+                    <th>September</th>
+                    <th>October</th>
+                    <th>November</th>
+                    <th>December</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Rows will be populated dynamically -->
+            </tbody>
+        </table>
+
+        <!-- Breakdown by Bank Table -->
+        <h2>Breakdown by Bank</h2>
+        <table id="breakdown-by-bank-table">
+            <thead>
+                <tr>
+                    <th>Bank</th>
+                    <th>Category</th>
+                    <th>January</th>
+                    <th>February</th>
+                    <th>March</th>
+                    <th>April</th>
+                    <th>May</th>
+                    <th>June</th>
+                    <th>July</th>
+                    <th>August</th>
+                    <th>September</th>
+                    <th>October</th>
+                    <th>November</th>
+                    <th>December</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Rows will be populated dynamically -->
+            </tbody>
+        </table>
+    </div>
+
+    <div id="popup-overlay"></div>
+
+    <div id="transaction-popup">
+        <h3>Transaction Details</h3>
+        <table id="transaction-details-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Bank</th>
+                    <th>Description</th>
+                    <th>Amount</th>
+                    <th>Update</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Transaction details will be dynamically added -->
+            </tbody>
+        </table>
+        <button id="close-popup">Close</button>
+    </div>
+
+    <div id="category-update-popup" >
+        <h3>Update Category</h3>
+        <select id="category-select-dropdown">
+            <!-- Categories will be dynamically populated -->
+        </select>
+        <button id="confirm-category-update">Confirm</button>
+        <button id="cancel-category-update">Cancel</button>
+    </div>
+    
+
+    <script>
+        // Fetch data for grouped expenditure
+        fetch('/api/grouped-expenditure')
+            .then(response => response.json())
+            .then(data => {
+                const tableBody = document.getElementById('grouped-expenditure-table').querySelector('tbody');
+                data.forEach(row => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${row.classification}</td>
+                        <td data-category="${row.classification}" data-month="1" class="clickable-cell">${row.Jan || 0}</td>
+                        <td data-category="${row.classification}" data-month="2" class="clickable-cell">${row.Feb || 0}</td>
+                        <td data-category="${row.classification}" data-month="3" class="clickable-cell">${row.Mar || 0}</td>
+                        <td data-category="${row.classification}" data-month="4" class="clickable-cell">${row.Apr || 0}</td>
+                        <td data-category="${row.classification}" data-month="5" class="clickable-cell">${row.May || 0}</td>
+                        <td data-category="${row.classification}" data-month="6" class="clickable-cell">${row.Jun || 0}</td>
+                        <td data-category="${row.classification}" data-month="7" class="clickable-cell">${row.Jul || 0}</td>
+                        <td data-category="${row.classification}" data-month="8" class="clickable-cell">${row.Aug || 0}</td>
+                        <td data-category="${row.classification}" data-month="9" class="clickable-cell">${row.Sep || 0}</td>
+                        <td data-category="${row.classification}" data-month="10" class="clickable-cell">${row.Oct || 0}</td>
+                        <td data-category="${row.classification}" data-month="11" class="clickable-cell">${row.Nov || 0}</td>
+                        <td data-category="${row.classification}" data-month="12" class="clickable-cell">${row.Dec || 0}</td>
+                        <td>${row.Total || 0}</td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+            })
+            .catch(error => console.error('Error fetching grouped expenditure:', error));
+
+        // Fetch data for breakdown by bank
+        fetch('/api/breakdown-by-bank')
+            .then(response => response.json())
+            .then(data => {
+                const tableBody = document.getElementById('breakdown-by-bank-table').querySelector('tbody');
+                data.forEach(row => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${row.bank}</td>
+                        <td>${row.classification}</td>
+                        <td>${row.Jan || 0}</td>
+                        <td>${row.Feb || 0}</td>
+                        <td>${row.Mar || 0}</td>
+                        <td>${row.Apr || 0}</td>
+                        <td>${row.May || 0}</td>
+                        <td>${row.Jun || 0}</td>
+                        <td>${row.Jul || 0}</td>
+                        <td>${row.Aug || 0}</td>
+                        <td>${row.Sep || 0}</td>
+                        <td>${row.Oct || 0}</td>
+                        <td>${row.Nov || 0}</td>
+                        <td>${row.Dec || 0}</td>
+                        <td>${row.Total || 0}</td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+            })
+            .catch(error => console.error('Error fetching breakdown by bank:', error));
+
+        // Event listener for clickable cells
+        document.getElementById('grouped-expenditure-table').addEventListener('click', event => {
+            const cell = event.target;
+            if (cell.classList.contains('clickable-cell')) {
+                const category = cell.dataset.category;
+                const month = cell.dataset.month;
+                fetchTransactionDetails(category, month);
+            }
+        });
+
+        // Fetch transaction details and show in pop-up
+        function fetchTransactionDetails(category, month) {
+            fetch(`/api/transaction-details?category=${encodeURIComponent(category)}&month=${month}`)
+                .then(response => response.json())
+                .then(data => {
+                    showTransactionPopup(data);
+                })
+                .catch(error => console.error('Error fetching transaction details:', error));
+        }
+
+        // Show the transaction pop-up
+        function showTransactionPopup(transactions) {
+            const overlay = document.getElementById('popup-overlay');
+            const popup = document.getElementById('transaction-popup');
+            const tableBody = document.getElementById('transaction-details-table').querySelector('tbody');
+
+            // Clear previous data
+            tableBody.innerHTML = '';
+
+            // Populate table with transaction details
+            transactions.forEach(transaction => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${transaction.bookingDateTime || 'N/A'}</td>
+                    <td>${transaction.bank || 'N/A'}</td>
+                    <td>${transaction.transaction_description || 'N/A'}</td>
+                    <td>${transaction.amount || 0}</td>
+                    <td>
+                        <button class="update-category-btn" data-id="${transaction.id}" data-category="${transaction.classification}">Update</button>
+                        <td>
+                `;
+                tableBody.appendChild(tr);
+            });
+
+            // Add event listeners to update buttons
+            document.querySelectorAll('.update-category-btn').forEach(button => {
+                button.addEventListener('click', event => {
+                    console.log("Button clicked");
+                    const transactionId = event.target.dataset.id;
+                    const currentCategory = event.target.dataset.classification;
+                    showCategoryUpdatePopup(transactionId, currentCategory);
+                });
+            });
+
+            // Show the pop-up
+            overlay.style.display = 'block';
+            popup.style.display = 'block';
+
+            // Add event listener to close the pop-up
+            document.getElementById('close-popup').addEventListener('click', () => {
+                overlay.style.display = 'none';
+                popup.style.display = 'none';
+            });
+        }
+
+        function showCategoryUpdatePopup(transactionId, currentCategory) {
+            const overlay = document.getElementById('popup-overlay');
+            const categoryPopup = document.getElementById('category-update-popup');
+            const categoryDropdown = document.getElementById('category-select-dropdown');
+
+            // Clear and populate the dropdown
+            categoryDropdown.innerHTML = '';
+            const categories = ["Transport", "Groceries & Supermarkets", "Dining & Takeaways", "Retail & Shopping", "Entertainment", "Miscellaneous","Income","Household", "Exclude"]; // Replace with your categories
+            categories.forEach(category => {
+                const option = document.createElement('option');
+                option.value = category;
+                option.textContent = category;
+                if (category === currentCategory) {
+                    option.selected = true;
+                }
+                categoryDropdown.appendChild(option);
+            });
+
+            overlay.style.display = 'block';
+            categoryPopup.style.display = 'block';
+
+            document.getElementById('confirm-category-update').onclick = () => {
+                const newCategory = categoryDropdown.value;
+                updateTransactionCategory(transactionId, newCategory);
+            };
+
+            document.getElementById('cancel-category-update').onclick = () => {
+                categoryPopup.style.display = 'none';
+                overlay.style.display = 'none';
+            };
+        }
+
+        function updateTransactionCategory(transactionId, newCategory) {
+            fetch('/api/update-category', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ transaction_id: transactionId, new_category: newCategory })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data.message);
+
+                // Close the category update popup
+                document.getElementById('category-update-popup').style.display = 'none';
+                document.getElementById('popup-overlay').style.display = 'none';
+
+                // Refresh the grouped expenditure table
+                refreshGroupedExpenditure();
+            })
+            .catch(error => console.error('Error updating category:', error));
+        }
+
+        function refreshGroupedExpenditure() {
+            fetch('/api/grouped-expenditure')
+                .then(response => response.json())
+                .then(data => {
+                    const tableBody = document.getElementById('grouped-expenditure-table').querySelector('tbody');
+                    tableBody.innerHTML = '';
+                    data.forEach(row => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${row.classification}</td>
+                            <td>${row.Jan || 0}</td>
+                            <td>${row.Feb || 0}</td>
+                            <td>${row.Mar || 0}</td>
+                            <td>${row.Apr || 0}</td>
+                            <td>${row.May || 0}</td>
+                            <td>${row.Jun || 0}</td>
+                            <td>${row.Jul || 0}</td>
+                            <td>${row.Aug || 0}</td>
+                            <td>${row.Sep || 0}</td>
+                            <td>${row.Oct || 0}</td>
+                            <td>${row.Nov || 0}</td>
+                            <td>${row.Dec || 0}</td>
+                            <td>${row.Total || 0}</td>
+                        `;
+                        tableBody.appendChild(tr);
+                    });
+                })
+                .catch(error => console.error('Error refreshing grouped expenditure:', error));
+        }
+
+
+        document.addEventListener('DOMContentLoaded', () => {
+        const yearSelect = document.getElementById('year-select');
+        const currentYear = new Date().getFullYear();
+
+        // Populate year options
+        for (let year = currentYear - 5; year <= currentYear + 1; year++) {
+            const option = document.createElement('option');
+            option.value = year;
+            option.textContent = year;
+            if (year === currentYear) {
+                option.selected = true;
+            }
+            yearSelect.appendChild(option);
+        }
+
+        // Fetch and update data when year changes
+        yearSelect.addEventListener('change', () => {
+            const selectedYear = yearSelect.value;
+            updateTables(selectedYear);
+        });
+
+        // Initial fetch for the current year
+        updateTables(currentYear);
+
+        function updateTables(year) {
+            fetch(`/api/grouped-expenditure?year=${year}`)
+                .then(response => response.json())
+                .then(data => {
+                    const tableBody = document.getElementById('grouped-expenditure-table').querySelector('tbody');
+                    tableBody.innerHTML = ''; // Clear previous data
+                    data.forEach(row => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${row.classification}</td>
+                            <td data-category="${row.classification}" data-month="1" class="clickable-cell">${row.Jan || 0}</td>
+                            <td data-category="${row.classification}" data-month="2" class="clickable-cell">${row.Feb || 0}</td>
+                            <td data-category="${row.classification}" data-month="3" class="clickable-cell">${row.Mar || 0}</td>
+                            <td data-category="${row.classification}" data-month="4" class="clickable-cell">${row.Apr || 0}</td>
+                            <td data-category="${row.classification}" data-month="5" class="clickable-cell">${row.May || 0}</td>
+                            <td data-category="${row.classification}" data-month="6" class="clickable-cell">${row.Jun || 0}</td>
+                            <td data-category="${row.classification}" data-month="7" class="clickable-cell">${row.Jul || 0}</td>
+                            <td data-category="${row.classification}" data-month="8" class="clickable-cell">${row.Aug || 0}</td>
+                            <td data-category="${row.classification}" data-month="9" class="clickable-cell">${row.Sep || 0}</td>
+                            <td data-category="${row.classification}" data-month="10" class="clickable-cell">${row.Oct || 0}</td>
+                            <td data-category="${row.classification}" data-month="11" class="clickable-cell">${row.Nov || 0}</td>
+                            <td data-category="${row.classification}" data-month="12" class="clickable-cell">${row.Dec || 0}</td>
+                            <td>${row.Total || 0}</td>
+                        `;
+                        tableBody.appendChild(tr);
+                    });
+                })
+                .catch(error => console.error('Error fetching grouped expenditure:', error));
+
+            fetch(`/api/breakdown-by-bank?year=${year}`)
+                .then(response => response.json())
+                .then(data => {
+                    const tableBody = document.getElementById('breakdown-by-bank-table').querySelector('tbody');
+                    tableBody.innerHTML = ''; // Clear previous data
+                    data.forEach(row => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${row.bank}</td>
+                            <td>${row.classification}</td>
+                            <td>${row.Jan || 0}</td>
+                            <td>${row.Feb || 0}</td>
+                            <td>${row.Mar || 0}</td>
+                            <td>${row.Apr || 0}</td>
+                            <td>${row.May || 0}</td>
+                            <td>${row.Jun || 0}</td>
+                            <td>${row.Jul || 0}</td>
+                            <td>${row.Aug || 0}</td>
+                            <td>${row.Sep || 0}</td>
+                            <td>${row.Oct || 0}</td>
+                            <td>${row.Nov || 0}</td>
+                            <td>${row.Dec || 0}</td>
+                            <td>${row.Total || 0}</td>
+                        `;
+                        tableBody.appendChild(tr);
+                    });
+                })
+                .catch(error => console.error('Error fetching breakdown by bank:', error));
+        }
+    });
+
+
+        document.getElementById("reauthenticate-button").addEventListener("click", () => {
+            const bankSelect = document.getElementById("bank-select");
+            const selectedBank = bankSelect.value;
+            const reauthLinkDiv = document.getElementById("reauthentication-link");
+
+            if (!selectedBank) {
+                alert("Please select a bank to start the re-authentication process.");
+                return;
+            }
+
+            // Fetch the re-authentication link from your server
+            fetch(`/api/reauthenticate?bank=${encodeURIComponent(selectedBank)}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error("Failed to generate re-authentication link.");
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.link) {
+                        reauthLinkDiv.innerHTML = `
+                            <p>Re-authentication link for <strong>${selectedBank}</strong>:</p>
+                            <a href="${data.link}" target="_blank">${data.link}</a>
+                        `;
+                    } else {
+                        reauthLinkDiv.innerHTML = `<p>Error: No link returned by the server.</p>`;
+                    }
+                })
+                .catch(error => {
+                    console.error("Error during re-authentication:", error);
+                    reauthLinkDiv.innerHTML = `<p>Error: Unable to generate the re-authentication link.</p>`;
+                });
+        });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    </script>
+</body>
+</html>
